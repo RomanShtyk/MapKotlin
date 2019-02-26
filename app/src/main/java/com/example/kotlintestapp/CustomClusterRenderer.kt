@@ -18,7 +18,8 @@ class CustomClusterRenderer(
         item: BugMarker,
         markerOptions: MarkerOptions?
     ) {
-       val markerDescriptor :BitmapDescriptor  = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)
+        val markerDescriptor: BitmapDescriptor =
+            BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA)
         markerOptions?.icon(markerDescriptor)
     }
 }

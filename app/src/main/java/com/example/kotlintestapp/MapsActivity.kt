@@ -1,16 +1,21 @@
 package com.example.kotlintestapp
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.arch.lifecycle.Observer
+import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.content.IntentSender
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.graphics.drawable.Drawable
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.support.design.widget.FloatingActionButton
 import android.support.v4.app.ActivityCompat
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 
@@ -23,7 +28,6 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.ClusterManager
-import org.jetbrains.anko.defaultSharedPreferences
 import org.jetbrains.anko.toast
 import java.lang.Math.abs
 
@@ -38,67 +42,94 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var locationCallback: LocationCallback
     private lateinit var locationRequest: LocationRequest
     private var locationUpdateState = false
-    private var isCheking: Boolean = true
+    private var isChecking: Boolean = false
     private val myLocationHashMap = HashMap<String, Marker>()
     private val mCheckPointsMap = HashMap<Int, BugMarker>()
+    private lateinit var viewModel: MapViewModel
 
-    private lateinit var sharedPref: SharedPreferences
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
         private const val REQUEST_CHECK_SETTINGS = 2
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        val inflater: MenuInflater = menuInflater
+        inflater.inflate(R.menu.my_menu, menu)
+        return true
+    }
+
+    @SuppressLint("RestrictedApi")
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        when (item?.itemId) {
+            R.id.action_switch -> {
+                val listFragment = ListFragment()
+                supportFragmentManager.beginTransaction()
+                    .add(R.id.container, listFragment)
+                    .addToBackStack(null)
+                    .commit()
+                return true
+            }
+            R.id.action_mcentre -> {
+                mMap.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(lastLocation.latitude, lastLocation.longitude),
+                        19f
+                    )
+                )
+            }
+            R.id.action_start ->{
+                if(isChecking){
+                    val icon: Drawable = resources.getDrawable(R.mipmap.start)
+                    item.icon = icon
+                    isChecking = false
+                } else{
+                    val icon: Drawable = resources.getDrawable(R.mipmap.stop)
+                    item.icon = icon
+                    isChecking = true
+                }
+            }
+        }
+
+        return super.onOptionsItemSelected(item)
+    }
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-        sharedPref = this.defaultSharedPreferences
-        //sharedPref.edit().clear().apply()
-
+        viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
+        viewModel.initListOfCheckPoints(this)
+        viewModel.mCheckPoints.observe(this, Observer<HashMap<Int, BugMarker>> { hash ->
+            if (hash != null) {
+                mCheckPointsMap.clear()
+                mCheckPointsMap.putAll(hash)
+            }
+        })
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        val fab = findViewById<FloatingActionButton>(R.id.fab)
-
-        fab.setOnClickListener {
-            mMap.animateCamera(
-                CameraUpdateFactory.newLatLngZoom(
-                    LatLng(lastLocation.latitude, lastLocation.longitude),
-                    19f
-                )
-            )
-        }
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 super.onLocationResult(p0)
 
                 lastLocation = p0.lastLocation
                 placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
-                if (isCheking) {
-                    val list: MutableList<Int> = mutableListOf()
+                //var index: Int = -1
+                if (isChecking) {
                     for (bug in mCheckPointsMap) {
                         if (isNearMyLocation(
                                 LatLng(lastLocation.latitude, lastLocation.longitude),
                                 bug.value.position
                             )
                         ) {
-                            mClusterManager.clearItems()
-                            list.add(bug.key)
+                            mClusterManager.removeItem(bug.value)
+                            viewModel.reachPoint(bug.key.toString())
                             toast("Checkpoint #${bug.key} reached!")
-                            val editor = sharedPref.edit()
-                            editor.putBoolean(bug.key.toString(), true)
-                            editor.apply()
-                        }
-                    }
-                    if (!list.isEmpty()) {
-                        for (item in list) {
-                            mCheckPointsMap.remove(item)
-                        }
-                        for (bug in mCheckPointsMap) {
-                            mClusterManager.addItem(bug.value)
+                            break
                         }
                     }
                 }
@@ -108,7 +139,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun isNearMyLocation(myLoc: LatLng, location: LatLng): Boolean {
-        return abs(myLoc.latitude - location.latitude) < 0.0001 && abs(myLoc.longitude - location.longitude) < 0.0001
+        return abs(myLoc.latitude - location.latitude) < 0.0002 && abs(myLoc.longitude - location.longitude) < 0.0002
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -132,6 +163,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             startLocationUpdates()
         }
     }
+
 
     override fun onStop() {
         super.onStop()
@@ -180,23 +212,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    private fun addBugItems() {
-        val i = 0..9
-        for (a in i) {
-            val bugMarker = BugMarker(
-                LatLng((49.765746 - a * 0.0001), (23.965262 - a * 0.0001)),
-                a,
-                sharedPref.getBoolean(a.toString(), false)
-            )
-
-
-            if (!sharedPref.getBoolean(a.toString(), false)) {
-                mCheckPointsMap[a] = bugMarker
-                mClusterManager.addItem(bugMarker)
-            }
-        }
-    }
-
 
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
@@ -204,7 +219,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mClusterManager = ClusterManager(this, mMap)
         val renderer = CustomClusterRenderer(this, mMap, mClusterManager)
         mMap.setOnCameraIdleListener(mClusterManager)
-        addBugItems()
+        for (bug in mCheckPointsMap) {
+            mClusterManager.addItem(bug.value)
+        }
         mClusterManager.renderer = renderer
         mClusterManager.cluster()
     }
