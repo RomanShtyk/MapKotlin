@@ -1,18 +1,22 @@
 package com.example.kotlintestapp
 
 import android.annotation.SuppressLint
-import android.app.Activity
+import android.app.*
 import android.arch.lifecycle.Observer
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.location.Location
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
@@ -46,6 +50,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private val myLocationHashMap = HashMap<String, Marker>()
     private val mCheckPointsMap = HashMap<Int, BugMarker>()
     private lateinit var viewModel: MapViewModel
+    private val listFragment = ListFragment()
+
+    lateinit var notificationManager: NotificationManager
+    lateinit var notificationChannel: NotificationChannel
+    lateinit var builder: Notification.Builder
+    private val channelId = "com.example.kotlintestapp"
+    private val description = "Point reached notification"
 
 
     companion object {
@@ -59,34 +70,51 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         return true
     }
 
+
     @SuppressLint("RestrictedApi")
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.action_switch -> {
-                val listFragment = ListFragment()
-                supportFragmentManager.beginTransaction()
-                    .add(R.id.container, listFragment)
-                    .addToBackStack(null)
-                    .commit()
+                if (!listFragment.isAdded) {
+                    supportFragmentManager.beginTransaction()
+                        .add(R.id.container, listFragment)
+                        .addToBackStack(null)
+                        .commit()
+                }
                 return true
             }
             R.id.action_mcentre -> {
-                mMap.animateCamera(
-                    CameraUpdateFactory.newLatLngZoom(
-                        LatLng(lastLocation.latitude, lastLocation.longitude),
-                        19f
+                if(lastLocation != null){
+                if (!listFragment.isAdded) {
+                    mMap.animateCamera(
+                        CameraUpdateFactory.newLatLngZoom(
+                            LatLng(lastLocation.latitude, lastLocation.longitude),
+                            19f
+                        )
                     )
-                )
+                } else {
+                    toast("Wait...")
+                }
+                }
             }
-            R.id.action_start ->{
-                if(isChecking){
+            R.id.action_start -> {
+                if (isChecking) {
                     val icon: Drawable = resources.getDrawable(R.mipmap.start)
                     item.icon = icon
                     isChecking = false
-                } else{
+
+                    val serviceIntent = Intent(this, MyService::class.java)
+                    stopService(serviceIntent)
+
+                } else {
                     val icon: Drawable = resources.getDrawable(R.mipmap.stop)
                     item.icon = icon
                     isChecking = true
+                    //foreground service
+
+                    val serviceIntent = Intent(this, MyService::class.java)
+                    ContextCompat.startForegroundService(this, serviceIntent)
+
                 }
             }
         }
@@ -98,6 +126,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
+
+
         viewModel = ViewModelProviders.of(this).get(MapViewModel::class.java)
         viewModel.initListOfCheckPoints(this)
         viewModel.mCheckPoints.observe(this, Observer<HashMap<Int, BugMarker>> { hash ->
@@ -106,6 +136,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 mCheckPointsMap.putAll(hash)
             }
         })
+        initNotification()
+
+
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
@@ -118,7 +151,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                 lastLocation = p0.lastLocation
                 placeMarkerOnMap(LatLng(lastLocation.latitude, lastLocation.longitude))
-                //var index: Int = -1
                 if (isChecking) {
                     for (bug in mCheckPointsMap) {
                         if (isNearMyLocation(
@@ -128,7 +160,44 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         ) {
                             mClusterManager.removeItem(bug.value)
                             viewModel.reachPoint(bug.key.toString())
-                            toast("Checkpoint #${bug.key} reached!")
+                            //notification
+                            toast("You reached the #${bug.key} point")
+                            val intent = Intent(applicationContext, MapsActivity::class.java)
+                            val pendingIntent = PendingIntent.getActivity(
+                                applicationContext,
+                                0,
+                                intent,
+                                PendingIntent.FLAG_UPDATE_CURRENT
+                            )
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                builder = Notification.Builder(applicationContext, channelId)
+                                    .setContentTitle("Congratulations!!!")
+                                    .setContentText("You reached the #${bug.key} point")
+                                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                                    .setLargeIcon(
+                                        BitmapFactory.decodeResource(
+                                            applicationContext.resources,
+                                            R.mipmap.icons8_bug_48
+                                        )
+                                    )
+                                    .setContentIntent(pendingIntent)
+                            } else {
+
+                                builder = Notification.Builder(applicationContext)
+                                    .setContentTitle("Congratulations!!!")
+                                    .setContentText("You reached the #${bug.key} point")
+                                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                                    .setLargeIcon(
+                                        BitmapFactory.decodeResource(
+                                            applicationContext.resources,
+                                            R.mipmap.icons8_bug_48
+                                        )
+                                    )
+                                    .setContentIntent(pendingIntent)
+                            }
+                            notificationManager.notify(1234, builder.build())
+                            //end notification
                             break
                         }
                     }
@@ -136,6 +205,19 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
         createLocationRequest()
+    }
+
+    private fun initNotification() {
+        notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationChannel =
+                NotificationChannel(channelId, description, NotificationManager.IMPORTANCE_HIGH)
+            notificationChannel.enableLights(true)
+            notificationChannel.lightColor = Color.GREEN
+            notificationChannel.enableVibration(false)
+            notificationManager.createNotificationChannel(notificationChannel)
+        }
     }
 
     private fun isNearMyLocation(myLoc: LatLng, location: LatLng): Boolean {
@@ -168,6 +250,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onStop() {
         super.onStop()
         locationUpdateState = false
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val serviceIntent = Intent(this, MyService::class.java)
+        stopService(serviceIntent)
     }
 
     private fun startLocationUpdates() {
@@ -248,9 +336,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         // 1
         locationRequest = LocationRequest()
         // 2
-        locationRequest.interval = 5000
+        locationRequest.interval = 1000
         // 3
-        locationRequest.fastestInterval = 1000
+        locationRequest.fastestInterval = 500
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
 
         val builder = LocationSettingsRequest.Builder()

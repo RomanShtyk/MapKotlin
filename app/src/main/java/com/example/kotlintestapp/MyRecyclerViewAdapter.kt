@@ -23,9 +23,10 @@ class MyRecyclerViewAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = mValues[position]
-        holder.mIdView.text = item!!.title
-        holder.mContentView.text = item.snippet
-
+        if(item != null) {
+            holder.mIdView.text = item.title
+            holder.mContentView.text = item.snippet
+        }
         with(holder.mView) {
             tag = item
         }

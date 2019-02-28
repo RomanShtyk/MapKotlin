@@ -32,7 +32,9 @@ class ListFragment : Fragment() {
         rv.adapter = mAdapter
         rv.layoutManager = LinearLayoutManager(context)
         viewModel.mReachedPoints.observe(this, Observer<HashMap<Int, BugMarker>> { hash ->
-            mAdapter.refreshList(hash!!)
+            if (hash != null) {
+                mAdapter.refreshList(hash)
+            }
         })
         return view
     }

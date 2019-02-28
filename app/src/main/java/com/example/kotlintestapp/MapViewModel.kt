@@ -36,12 +36,14 @@ class MapViewModel : ViewModel() {
     }
 
     fun reachPoint(a: String) {
-        mReachedPointsMap[a.toInt()] = mCheckPointsMap[a.toInt()]!!
-        mCheckPointsMap.remove(a.toInt())
-        mReachedPoints.postValue(mReachedPointsMap)
-        mCheckPoints.postValue(mCheckPointsMap)
-        val editor: SharedPreferences.Editor = sharedPref.edit()
-        editor.putBoolean(a, true)
-        editor.apply()
+        if (mCheckPointsMap[a.toInt()] != null) {
+            mReachedPointsMap[a.toInt()] = mCheckPointsMap[a.toInt()]!!
+            mCheckPointsMap.remove(a.toInt())
+            mReachedPoints.postValue(mReachedPointsMap)
+            mCheckPoints.postValue(mCheckPointsMap)
+            val editor: SharedPreferences.Editor = sharedPref.edit()
+            editor.putBoolean(a, true)
+            editor.apply()
+        }
     }
 }
