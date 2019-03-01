@@ -2,8 +2,9 @@ package com.example.kotlintestapp
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterItem
+import java.io.Serializable
 
-class BugMarker(private val mPosition: LatLng, private val counter: Int, private var isReached: Boolean) : ClusterItem {
+class BugMarker(private val mPositionLatitude: Double, private val mPositionLongitude: Double, private val counter: Int, private var isReached: Boolean) : ClusterItem, Serializable {
 
     override fun getSnippet(): String {
         return "Snippet"
@@ -14,6 +15,6 @@ class BugMarker(private val mPosition: LatLng, private val counter: Int, private
     }
 
     override fun getPosition(): LatLng {
-        return mPosition
+        return LatLng(mPositionLatitude, mPositionLongitude)
     }
 }
