@@ -109,7 +109,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-        //TODO("не працює вхід з нотіфікейшину, запитай, як то краще зробити")
+        //передавати інтент в сервіс
         viewModel = ViewModelProviders.of(this).get(MyViewModel::class.java)
         viewModel.initLocation(this)
         mReachedPointsMap = viewModel.mReachedPoints
