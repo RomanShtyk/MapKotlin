@@ -10,7 +10,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 
 class CustomClusterRenderer(
-    private val mContext: Context, map: GoogleMap,
+    mContext: Context, map: GoogleMap,
     clusterManager: ClusterManager<BugMarker>
 ) : DefaultClusterRenderer<BugMarker>(mContext, map, clusterManager) {
 

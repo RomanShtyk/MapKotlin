@@ -4,7 +4,11 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterItem
 import java.io.Serializable
 
-class BugMarker(private val mPositionLatitude: Double, private val mPositionLongitude: Double, private val counter: Int, private var isReached: Boolean) : ClusterItem, Serializable {
+class BugMarker(
+    private val mPositionLatitude: Double,
+    private val mPositionLongitude: Double,
+    private val counter: Int
+) : ClusterItem, Serializable {
 
     override fun getSnippet(): String {
         return "Snippet"

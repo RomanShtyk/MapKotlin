@@ -1,16 +1,16 @@
 package com.example.kotlintestapp
 
 import android.annotation.SuppressLint
-import android.arch.lifecycle.ViewModelProviders
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
+import android.app.ActivityManager
+import android.app.AlertDialog
+import android.content.*
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.location.Location
+import android.location.LocationManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.Settings
 import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuInflater
@@ -41,11 +41,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var lastLocation: Location? = null
     private var mReachedPointsMap = HashMap<Int, BugMarker>()
     private var isChecking: Boolean = false
-    private lateinit var viewModel: MyViewModel
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
         inflater.inflate(R.menu.my_menu, menu)
+        if (menu != null) {
+            val actionStartButton: MenuItem = menu.findItem(R.id.action_start)
+            isChecking = isServiceRunningInForeground(this, MyService::class.java)
+            if (isChecking) {
+                actionStartButton.icon = resources.getDrawable(R.mipmap.stop)
+            } else {
+                actionStartButton.icon = resources.getDrawable(R.mipmap.start)
+            }
+        }
+
         return true
     }
 
@@ -54,7 +63,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.action_switch -> {
-                val bundle: Bundle = Bundle()
+                val bundle = Bundle()
                 bundle.putSerializable("list", mReachedPointsMap)
                 listFragment.arguments = bundle
                 if (!listFragment.isAdded) {
@@ -80,14 +89,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
             R.id.action_start -> {
-
                 if (isChecking) {
                     val icon: Drawable = resources.getDrawable(R.mipmap.start)
                     item.icon = icon
                     isChecking = false
 
                     val serviceIntent = Intent(this, MyService::class.java)
-                    stopService(serviceIntent)
+                    serviceIntent.putExtra("isChecking", false)
+                    ContextCompat.startForegroundService(this, serviceIntent)
+                    //stopService(serviceIntent)
+                    toast("Not working...")
 
                 } else {
                     val icon: Drawable = resources.getDrawable(R.mipmap.stop)
@@ -96,8 +107,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     //foreground service
 
                     val serviceIntent = Intent(this, MyService::class.java)
+                    serviceIntent.putExtra("isChecking", true)
                     ContextCompat.startForegroundService(this, serviceIntent)
-
+                    toast("Working...")
                 }
             }
         }
@@ -109,10 +121,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_maps)
-        //передавати інтент в сервіс
-        viewModel = ViewModelProviders.of(this).get(MyViewModel::class.java)
-        viewModel.initLocation(this)
-        mReachedPointsMap = viewModel.mReachedPoints
         mIntentFilter = IntentFilter()
         mIntentFilter.addAction("location")
         mIntentFilter.addAction("listOfPoints")
@@ -121,10 +129,16 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+//        if()
+//        val myIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+//        this@MapsActivity.startActivity(myIntent)
     }
 
     public override fun onResume() {
         super.onResume()
+        val serviceIntent = Intent(this, MyService::class.java)
+        serviceIntent.putExtra("isInit", true)
+        startService(serviceIntent)
         registerReceiver(mReceiver, mIntentFilter)
     }
 
@@ -146,13 +160,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val renderer = CustomClusterRenderer(this, mMap, mClusterManager)
         mMap.setOnCameraIdleListener(mClusterManager)
         mClusterManager.renderer = renderer
-        mCheckPointsMap.putAll(viewModel.mCheckPoints)
-        for (bug in mCheckPointsMap) {
-            mClusterManager.addItem(bug.value)
-            mClusterManager.cluster()
-        }
-        lastLocation = viewModel.mLocation
-        placeMarkerOnMap(LatLng(lastLocation!!.latitude, lastLocation!!.longitude))
     }
 
     private fun placeMarkerOnMap(location: LatLng) {
@@ -177,15 +184,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(contxt: Context?, intent: Intent?) {
             if (intent!!.action == "location") {
-                lastLocation = intent.extras["location"] as Location
-                viewModel.mLocation = lastLocation as Location
-                viewModel.setLocation(lastLocation!!.longitude.toLong(), lastLocation!!.latitude.toLong())
+                lastLocation = intent.extras!!["location"] as Location
                 placeMarkerOnMap(LatLng(lastLocation!!.latitude, lastLocation!!.longitude))
             }
             if (intent.action == "listOfPoints") {
                 mCheckPointsMap.clear()
-                mCheckPointsMap.putAll(intent.extras["listOfPoints"] as HashMap<Int, BugMarker>)
-                viewModel.mCheckPoints = mCheckPointsMap
+                mCheckPointsMap.putAll(intent.extras!!["listOfPoints"] as HashMap<Int, BugMarker>)
                 mClusterManager.clearItems()
                 for (bug in mCheckPointsMap) {
                     mClusterManager.addItem(bug.value)
@@ -193,10 +197,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
             if (intent.action == "list") {
-                mReachedPointsMap = intent.extras["list"] as HashMap<Int, BugMarker>
-                viewModel.mReachedPoints = mReachedPointsMap
+                mReachedPointsMap = intent.extras!!["list"] as HashMap<Int, BugMarker>
             }
         }
+    }
+
+    private fun isServiceRunningInForeground(context: Context, serviceClass: Class<*>): Boolean {
+        val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (serviceClass.name == service.service.className) {
+                if (service.foreground) {
+                    return true
+                }
+
+            }
+        }
+        return false
     }
 
 }

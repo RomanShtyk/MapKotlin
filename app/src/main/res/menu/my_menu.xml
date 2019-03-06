@@ -8,7 +8,6 @@
             app:showAsAction="ifRoom"/>
     <item
             android:id="@+id/action_start"
-            android:icon="@mipmap/start"
             android:title="@string/app_name"
             app:showAsAction="always"/>
     <item

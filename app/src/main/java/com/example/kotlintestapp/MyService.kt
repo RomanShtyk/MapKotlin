@@ -14,6 +14,11 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import org.jetbrains.anko.toast
+import android.content.Intent
+import android.provider.Settings
+import org.jetbrains.anko.longToast
+
+
 
 
 class MyService : Service() {
@@ -32,11 +37,12 @@ class MyService : Service() {
     private val mCheckPointsMap = HashMap<Int, BugMarker>()
     private val mReachedPointsMap = HashMap<Int, BugMarker>()
     private lateinit var sharedPref: SharedPreferences
-    private var isInit: Boolean = true
+    private var isInit: Boolean? = true
+    private var isChecking: Boolean? = false
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
-        private const val REQUEST_CHECK_SETTINGS = 2
+        //private const val REQUEST_CHECK_SETTINGS = 2
     }
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -48,6 +54,7 @@ class MyService : Service() {
     }
 
     override fun onCreate() {
+
         super.onCreate()
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -60,48 +67,14 @@ class MyService : Service() {
             notificationChannel.enableVibration(false)
             notificationManager.createNotificationChannel(notificationChannel)
         }
-        val int = Intent(applicationContext, MapsActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext,
-            0,
-            int,
-            PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = Notification.Builder(applicationContext, channelId)
-                .setContentTitle("Service is working")
-                .setSmallIcon(R.mipmap.icons8_bug_48)
-                .setLargeIcon(
-                    BitmapFactory.decodeResource(
-                        applicationContext.resources,
-                        R.mipmap.icons8_bug_48
-                    )
-                )
-                .setContentIntent(pendingIntent)
-        } else{
-            builder = Notification.Builder(applicationContext)
-                .setContentTitle("Service is working")
-                .setSmallIcon(R.mipmap.icons8_bug_48)
-                .setLargeIcon(
-                    BitmapFactory.decodeResource(
-                        applicationContext.resources,
-                        R.mipmap.icons8_bug_48
-                    )
-                )
-                .setContentIntent(pendingIntent)
-        }
-        startForeground(1, builder.build())
-
         sharedPref = PreferenceManager.getDefaultSharedPreferences(this)
         //sharedPref.edit().clear().apply()
         val i = 0..9
         for (a in i) {
             val bugMarker = BugMarker(
-                //LatLng((49.765746 - a * 0.0001), (23.965262 - a * 0.0001))
-                (49.813909 - a * 0.0001), (24.019452 - a * 0.0001),
-                a,
-                sharedPref.getBoolean(a.toString(), false)
+                //LatLng((49.813909 - a * 0.0001), (24.019452 - a * 0.0001))
+                (49.765746 - a * 0.0001), (23.965262 - a * 0.0001),
+                a
             )
             if (!sharedPref.getBoolean(a.toString(), false)) {
                 mCheckPointsMap[a] = bugMarker
@@ -117,73 +90,78 @@ class MyService : Service() {
                 super.onLocationResult(p0)
                 lastLocation = p0.lastLocation
                 var removeIt: Int = -1
-                for(bug in mCheckPointsMap){
-                if(isNearMyLocation(LatLng(lastLocation.latitude, lastLocation.longitude),bug.value.position)){
-
-                    mReachedPointsMap[bug.key] = mCheckPointsMap[bug.key]!!
-
-                    removeIt = bug.key
-
-                    val editor: SharedPreferences.Editor = sharedPref.edit()
-                    editor.putBoolean(bug.key.toString(), true)
-                    editor.apply()
-                    //notification
-                    toast("You reached the #${bug.key} point")
-                    val intent = Intent(applicationContext, MapsActivity::class.java)
-                    val pending = PendingIntent.getActivity(
-                        applicationContext,
-                        0,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                    )
-
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        builder = Notification.Builder(applicationContext, channelId)
-                            .setContentTitle("Congratulations!!!")
-                            .setContentText("You reached the #${bug.key} point")
-                            .setSmallIcon(R.mipmap.icons8_bug_48)
-                            .setLargeIcon(
-                                BitmapFactory.decodeResource(
-                                    applicationContext.resources,
-                                    R.mipmap.icons8_bug_48
-                                )
+                if (isChecking != null && isChecking as Boolean) {
+                    for (bug in mCheckPointsMap) {
+                        if (isNearMyLocation(
+                                LatLng(lastLocation.latitude, lastLocation.longitude),
+                                bug.value.position
                             )
-                            .setContentIntent(pending)
-                    } else {
+                        ) {
 
-                        builder = Notification.Builder(applicationContext)
-                            .setContentTitle("Congratulations!!!")
-                            .setContentText("You reached the #${bug.key} point")
-                            .setSmallIcon(R.mipmap.icons8_bug_48)
-                            .setLargeIcon(
-                                BitmapFactory.decodeResource(
-                                    applicationContext.resources,
-                                    R.mipmap.icons8_bug_48
-                                )
+                            mReachedPointsMap[bug.key] = mCheckPointsMap[bug.key]!!
+
+                            removeIt = bug.key
+
+                            val editor: SharedPreferences.Editor = sharedPref.edit()
+                            editor.putBoolean(bug.key.toString(), true)
+                            editor.apply()
+                            //notification
+                            toast("You reached the #${bug.key} point")
+                            val intent = Intent(applicationContext, MapsActivity::class.java)
+                            val pending = PendingIntent.getActivity(
+                                applicationContext,
+                                0,
+                                intent,
+                                PendingIntent.FLAG_UPDATE_CURRENT
                             )
-                            .setContentIntent(pending)
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                builder = Notification.Builder(applicationContext, channelId)
+                                    .setContentTitle("Congratulations!!!")
+                                    .setContentText("You reached the #${bug.key} point")
+                                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                                    .setLargeIcon(
+                                        BitmapFactory.decodeResource(
+                                            applicationContext.resources,
+                                            R.mipmap.icons8_bug_48
+                                        )
+                                    )
+                                    .setContentIntent(pending)
+                            } else {
+
+                                builder = Notification.Builder(applicationContext)
+                                    .setContentTitle("Congratulations!!!")
+                                    .setContentText("You reached the #${bug.key} point")
+                                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                                    .setLargeIcon(
+                                        BitmapFactory.decodeResource(
+                                            applicationContext.resources,
+                                            R.mipmap.icons8_bug_48
+                                        )
+                                    )
+                                    .setContentIntent(pending)
+                            }
+                            notificationManager.notify(1234, builder.build())
+                            //end notification
+
+                            val intentFragment = Intent()
+                            intentFragment.action = "list"
+                            intentFragment.putExtra("list", mReachedPointsMap)
+                            sendBroadcast(intentFragment)
+
+                            val intentListActivity = Intent()
+                            intentListActivity.action = "listOfPoints"
+                            intentListActivity.putExtra("listOfPoints", mCheckPointsMap)
+                            sendBroadcast(intentListActivity)
+                            break
+                        }
+
                     }
-                    notificationManager.notify(1234, builder.build())
-                    //end notification
-
-                    val intentFragment = Intent()
-                    intentFragment.action = "list"
-                    intentFragment.putExtra("list", mReachedPointsMap)
-                    sendBroadcast(intentFragment)
-
-                    val intentListActivity = Intent()
-                    intentListActivity.action = "listOfPoints"
-                    intentListActivity.putExtra("listOfPoints", mCheckPointsMap)
-                    sendBroadcast(intentListActivity)
-                    break
-                    }
-
                 }
+                if (removeIt != -1)
+                    mCheckPointsMap.remove(removeIt)
 
-                if(removeIt != -1)
-                mCheckPointsMap.remove(removeIt)
-
-                if(isInit){
+                if (isInit as Boolean) {
                     val intentFragment = Intent()
                     intentFragment.action = "list"
                     intentFragment.putExtra("list", mReachedPointsMap)
@@ -228,6 +206,49 @@ class MyService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startLocationUpdates()
+        if (intent != null && intent.extras["isChecking"] != null) {
+            isChecking = intent.extras["isChecking"] as Boolean
+            if (isChecking == false)
+                stopForeground(true)
+            if (isChecking == true) {
+                val int = Intent(applicationContext, MapsActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    applicationContext,
+                    0,
+                    int,
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                )
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    builder = Notification.Builder(applicationContext, channelId)
+                        .setContentTitle("Service is working")
+                        .setSmallIcon(R.mipmap.icons8_bug_48)
+                        .setLargeIcon(
+                            BitmapFactory.decodeResource(
+                                applicationContext.resources,
+                                R.mipmap.icons8_bug_48
+                            )
+                        )
+                        .setContentIntent(pendingIntent)
+                } else {
+                    builder = Notification.Builder(applicationContext)
+                        .setContentTitle("Service is working")
+                        .setSmallIcon(R.mipmap.icons8_bug_48)
+                        .setLargeIcon(
+                            BitmapFactory.decodeResource(
+                                applicationContext.resources,
+                                R.mipmap.icons8_bug_48
+                            )
+                        )
+                        .setContentIntent(pendingIntent)
+                }
+                startForeground(1, builder.build())
+            }
+
+        }
+        if (intent != null && intent.extras["isInit"] != null) {
+            isInit = intent.extras["isInit"] as Boolean
+        }
         return START_NOT_STICKY
     }
 
@@ -260,10 +281,14 @@ class MyService : Service() {
                 try {
                     // Show the dialog by calling startResolutionForResult(),
                     // and check the result in onActivityResult().
-                    e.startResolutionForResult(
-                        MapsActivity(),
-                        REQUEST_CHECK_SETTINGS
-                    )
+                    longToast("You should enable Location service, and press Back")
+                    val i = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                    i.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    startActivity(i)
+//                    e.startResolutionForResult(
+//                        ,
+//                        REQUEST_CHECK_SETTINGS
+//                    )
                 } catch (sendEx: IntentSender.SendIntentException) {
                     // Ignore the error.
                 }
@@ -289,8 +314,6 @@ class MyService : Service() {
         //2
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null /* Looper */)
     }
-
-
 
 
 }
