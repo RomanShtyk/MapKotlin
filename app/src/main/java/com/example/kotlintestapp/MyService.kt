@@ -72,8 +72,8 @@ class MyService : Service() {
         val i = 0..9
         for (a in i) {
             val bugMarker = BugMarker(
-                //LatLng((49.813909 - a * 0.0001), (24.019452 - a * 0.0001))
-                (49.765746 - a * 0.0001), (23.965262 - a * 0.0001),
+                //LatLng((49.765746 - a * 0.0001),(23.965262 - a * 0.0001) )
+                (49.813909 - a * 0.0001),(24.019452 - a * 0.0001),
                 a
             )
             if (!sharedPref.getBoolean(a.toString(), false)) {
