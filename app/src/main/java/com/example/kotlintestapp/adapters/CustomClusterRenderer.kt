@@ -1,6 +1,7 @@
-package com.example.kotlintestapp
+package com.example.kotlintestapp.adapters
 
 import android.content.Context
+import com.example.kotlintestapp.models.BugMarker
 import com.google.maps.android.clustering.view.DefaultClusterRenderer
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.maps.android.clustering.ClusterManager

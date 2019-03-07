@@ -1,10 +1,12 @@
-package com.example.kotlintestapp
+package com.example.kotlintestapp.adapters
 
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.example.kotlintestapp.R
+import com.example.kotlintestapp.models.BugMarker
 
 
 import kotlinx.android.synthetic.main.fragment_bugmarker.view.*

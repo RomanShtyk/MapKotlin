@@ -1,20 +1,21 @@
-package com.example.kotlintestapp
+package com.example.kotlintestapp.view
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
-import android.app.AlertDialog
 import android.content.*
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.location.Location
-import android.location.LocationManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings
 import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import com.example.kotlintestapp.adapters.CustomClusterRenderer
+import com.example.kotlintestapp.services.MyService
+import com.example.kotlintestapp.R
+import com.example.kotlintestapp.models.BugMarker
 import com.google.android.gms.maps.CameraUpdateFactory
 
 import com.google.android.gms.maps.GoogleMap
@@ -41,6 +42,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var lastLocation: Location? = null
     private var mReachedPointsMap = HashMap<Int, BugMarker>()
     private var isChecking: Boolean = false
+    private var backPressCounter: Int = 0
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         val inflater: MenuInflater = menuInflater
@@ -54,7 +56,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 actionStartButton.icon = resources.getDrawable(R.mipmap.start)
             }
         }
-
         return true
     }
 
@@ -63,6 +64,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.action_switch -> {
+                backPressCounter = 0
                 val bundle = Bundle()
                 bundle.putSerializable("list", mReachedPointsMap)
                 listFragment.arguments = bundle
@@ -84,7 +86,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                             )
                         )
                     } else {
-                        toast("Wait...")
+                        toast("Go back to map")
                     }
                 }
             }
@@ -104,7 +106,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     val icon: Drawable = resources.getDrawable(R.mipmap.stop)
                     item.icon = icon
                     isChecking = true
-                    //foreground service
 
                     val serviceIntent = Intent(this, MyService::class.java)
                     serviceIntent.putExtra("isChecking", true)
@@ -113,7 +114,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         }
-
         return super.onOptionsItemSelected(item)
     }
 
@@ -129,9 +129,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
-//        if()
-//        val myIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-//        this@MapsActivity.startActivity(myIntent)
     }
 
     public override fun onResume() {
@@ -175,7 +172,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             )
         )
 
-        // 2
         val mMarker1: Marker = mMap.addMarker(markerOptions)
         myLocationHashMap["CURRENT"] = mMarker1
     }
@@ -209,10 +205,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (service.foreground) {
                     return true
                 }
-
             }
         }
         return false
     }
 
+    override fun onBackPressed() {
+        when {
+            listFragment.isAdded -> super.onBackPressed()
+            backPressCounter == 0 -> {
+                backPressCounter += 1
+                toast("Press back one more time to close app")
+            }
+            else -> super.onBackPressed()
+        }
+
+    }
 }

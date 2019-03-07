@@ -1,13 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.v7.widget.RecyclerView
+<android.support.constraint.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:background="@color/colorAccent"
-        android:id="@+id/list"
-        android:name="com.example.kotlintestapp.ListFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager"
-        tools:context=".ListFragment"
-        tools:listitem="@layout/fragment_bugmarker"/>
+        android:background="@color/colorAccent"
+        tools:context=".view.ListFragment">
+    <TextView
+            android:id="@+id/empty"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/no_checkpoints"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="@id/r_view"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.497"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginBottom="276dp" android:layout_marginTop="8dp"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+    <com.example.kotlintestapp.adapters.RecyclerViewEmptyViewSupport
+            android:id="@+id/r_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scrollbars="vertical"
+            android:name="com.example.kotlintestapp.ListFragment"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:listitem="@layout/fragment_bugmarker"
+            android:layout_marginTop="8dp" app:layout_constraintTop_toTopOf="parent"/>
+</android.support.constraint.ConstraintLayout>

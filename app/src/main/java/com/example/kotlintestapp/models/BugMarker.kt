@@ -1,4 +1,4 @@
-package com.example.kotlintestapp
+package com.example.kotlintestapp.models
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.clustering.ClusterItem

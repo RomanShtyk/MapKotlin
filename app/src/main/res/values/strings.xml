@@ -4,4 +4,5 @@
     <string name="reached_places">Reached Places</string>
     <string name="todo">TODO</string>
     <string name="show_reached_by_me">Show reached by me</string>
+    <string name="no_checkpoints">Reached checkpoints will be here</string>
 </resources>

@@ -1,4 +1,4 @@
-package com.example.kotlintestapp
+package com.example.kotlintestapp.services
 
 import android.app.*
 import android.content.*
@@ -16,9 +16,10 @@ import com.google.android.gms.maps.model.LatLng
 import org.jetbrains.anko.toast
 import android.content.Intent
 import android.provider.Settings
+import com.example.kotlintestapp.R
+import com.example.kotlintestapp.models.BugMarker
+import com.example.kotlintestapp.view.MapsActivity
 import org.jetbrains.anko.longToast
-
-
 
 
 class MyService : Service() {
@@ -73,7 +74,7 @@ class MyService : Service() {
         for (a in i) {
             val bugMarker = BugMarker(
                 //LatLng((49.765746 - a * 0.0001),(23.965262 - a * 0.0001) )
-                (49.813909 - a * 0.0001),(24.019452 - a * 0.0001),
+                (49.813909 - a * 0.0001), (24.019452 - a * 0.0001),
                 a
             )
             if (!sharedPref.getBoolean(a.toString(), false)) {
@@ -97,16 +98,11 @@ class MyService : Service() {
                                 bug.value.position
                             )
                         ) {
-
                             mReachedPointsMap[bug.key] = mCheckPointsMap[bug.key]!!
-
                             removeIt = bug.key
-
                             val editor: SharedPreferences.Editor = sharedPref.edit()
                             editor.putBoolean(bug.key.toString(), true)
                             editor.apply()
-                            //notification
-                            toast("You reached the #${bug.key} point")
                             val intent = Intent(applicationContext, MapsActivity::class.java)
                             val pending = PendingIntent.getActivity(
                                 applicationContext,
@@ -142,24 +138,25 @@ class MyService : Service() {
                                     .setContentIntent(pending)
                             }
                             notificationManager.notify(1234, builder.build())
-                            //end notification
-
-                            val intentFragment = Intent()
-                            intentFragment.action = "list"
-                            intentFragment.putExtra("list", mReachedPointsMap)
-                            sendBroadcast(intentFragment)
-
-                            val intentListActivity = Intent()
-                            intentListActivity.action = "listOfPoints"
-                            intentListActivity.putExtra("listOfPoints", mCheckPointsMap)
-                            sendBroadcast(intentListActivity)
                             break
                         }
 
                     }
                 }
-                if (removeIt != -1)
+                if (removeIt != -1) {
                     mCheckPointsMap.remove(removeIt)
+                    val intentFragment = Intent()
+                    intentFragment.action = "list"
+                    intentFragment.putExtra("list", mReachedPointsMap)
+                    sendBroadcast(intentFragment)
+
+                    val intentListActivity = Intent()
+                    intentListActivity.action = "listOfPoints"
+                    intentListActivity.putExtra("listOfPoints", mCheckPointsMap)
+                    sendBroadcast(intentListActivity)
+
+                    toast("You reached the #$removeIt point")
+                }
 
                 if (isInit as Boolean) {
                     val intentFragment = Intent()
@@ -189,7 +186,8 @@ class MyService : Service() {
         ) {
             ActivityCompat.requestPermissions(
                 MapsActivity(),
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION), LOCATION_PERMISSION_REQUEST_CODE
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
             )
             return
         }
