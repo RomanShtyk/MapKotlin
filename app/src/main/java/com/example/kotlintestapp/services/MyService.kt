@@ -204,8 +204,8 @@ class MyService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startLocationUpdates()
-        if (intent != null && intent.extras["isChecking"] != null) {
-            isChecking = intent.extras["isChecking"] as Boolean
+        if (intent != null) {
+            isChecking = intent.extras!!["isChecking"] as Boolean
             if (isChecking == false)
                 stopForeground(true)
             if (isChecking == true) {
@@ -244,8 +244,8 @@ class MyService : Service() {
             }
 
         }
-        if (intent != null && intent.extras["isInit"] != null) {
-            isInit = intent.extras["isInit"] as Boolean
+        if (intent != null) {
+            isInit = intent.extras!!["isInit"] as Boolean
         }
         return START_NOT_STICKY
     }
