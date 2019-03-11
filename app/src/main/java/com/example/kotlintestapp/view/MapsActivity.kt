@@ -3,11 +3,13 @@ package com.example.kotlintestapp.view
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.*
+import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuInflater
@@ -51,9 +53,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val actionStartButton: MenuItem = menu.findItem(R.id.action_start)
             isChecking = isServiceRunningInForeground(this, MyService::class.java)
             if (isChecking) {
-                actionStartButton.icon = resources.getDrawable(R.mipmap.stop)
+                actionStartButton.icon = resources.getDrawable(R.drawable.baseline_pause_circle_outline_24)
             } else {
-                actionStartButton.icon = resources.getDrawable(R.mipmap.start)
+                actionStartButton.icon = resources.getDrawable(R.drawable.baseline_play_circle_outline_24)
             }
         }
         return true
@@ -92,7 +94,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             R.id.action_start -> {
                 if (isChecking) {
-                    val icon: Drawable = resources.getDrawable(R.mipmap.start)
+                    val icon: Drawable = resources.getDrawable(R.drawable.baseline_play_circle_outline_24)
                     item.icon = icon
                     isChecking = false
 
@@ -103,7 +105,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     toast("Not working...")
 
                 } else {
-                    val icon: Drawable = resources.getDrawable(R.mipmap.stop)
+                    val icon: Drawable = resources.getDrawable(R.drawable.baseline_pause_circle_outline_24)
                     item.icon = icon
                     isChecking = true
 
@@ -129,6 +131,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
+
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this@MapsActivity,
+                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+                MyService.LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
     }
 
     public override fun onResume() {

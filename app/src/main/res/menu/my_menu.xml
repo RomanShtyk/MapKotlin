@@ -3,7 +3,7 @@
     <!-- "Mark Favorite", should appear as action button if possible -->
     <item
             android:id="@+id/action_mcentre"
-            android:icon="@drawable/googleg_standard_color_18"
+            android:icon="@drawable/baseline_location_searching_24"
             android:title=""
             app:showAsAction="ifRoom"/>
     <item
@@ -12,8 +12,8 @@
             app:showAsAction="always"/>
     <item
             android:id="@+id/action_switch"
-            android:icon="@mipmap/icons8_bug_48"
+            android:icon="@drawable/baseline_assignment_24"
             android:title="@string/show_reached_by_me"
-            app:showAsAction="ifRoom"/>
+            app:showAsAction="always"/>
 
 </menu>

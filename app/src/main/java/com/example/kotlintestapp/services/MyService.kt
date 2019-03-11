@@ -42,7 +42,7 @@ class MyService : Service() {
     private var isChecking: Boolean? = false
 
     companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        const val LOCATION_PERMISSION_REQUEST_CODE = 1
         //private const val REQUEST_CHECK_SETTINGS = 2
     }
 
@@ -184,11 +184,11 @@ class MyService : Service() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                MapsActivity(),
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+//            ActivityCompat.requestPermissions(
+//                MapsActivity(),
+//                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+//                LOCATION_PERMISSION_REQUEST_CODE
+//            )
             return
         }
         fusedLocationClient.lastLocation.addOnSuccessListener(MapsActivity()) { location ->
@@ -204,8 +204,8 @@ class MyService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startLocationUpdates()
-        if (intent != null) {
-            isChecking = intent.extras!!["isChecking"] as Boolean
+        if (intent != null && intent.extras["isChecking"] != null) {
+            isChecking = intent.extras["isChecking"] as Boolean
             if (isChecking == false)
                 stopForeground(true)
             if (isChecking == true) {
@@ -244,8 +244,8 @@ class MyService : Service() {
             }
 
         }
-        if (intent != null) {
-            isInit = intent.extras!!["isInit"] as Boolean
+        if (intent != null && intent.extras["isInit"] != null) {
+            isInit = intent.extras["isInit"] as Boolean
         }
         return START_NOT_STICKY
     }
@@ -301,12 +301,12 @@ class MyService : Service() {
                 android.Manifest.permission.ACCESS_FINE_LOCATION
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            ActivityCompat.requestPermissions(
-                //redo
-                MapsActivity(),
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+//            ActivityCompat.requestPermissions(
+//                //redo
+//                MapsActivity(),
+//                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
+//                LOCATION_PERMISSION_REQUEST_CODE
+//            )
             return
         }
         //2
