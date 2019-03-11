@@ -204,49 +204,44 @@ class MyService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startLocationUpdates()
-        if (intent != null && intent.extras["isChecking"] != null) {
-            isChecking = intent.extras["isChecking"] as Boolean
-            if (isChecking == false)
-                stopForeground(true)
-            if (isChecking == true) {
-                val int = Intent(applicationContext, MapsActivity::class.java)
-                val pendingIntent = PendingIntent.getActivity(
-                    applicationContext,
-                    0,
-                    int,
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                )
+        isChecking = intent?.extras?.getBoolean("isChecking")
+        if (isChecking == false)
+            stopForeground(true)
+        if (isChecking == true) {
+            val int = Intent(applicationContext, MapsActivity::class.java)
+            val pendingIntent = PendingIntent.getActivity(
+                applicationContext,
+                0,
+                int,
+                PendingIntent.FLAG_UPDATE_CURRENT
+            )
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    builder = Notification.Builder(applicationContext, channelId)
-                        .setContentTitle("Service is working")
-                        .setSmallIcon(R.mipmap.icons8_bug_48)
-                        .setLargeIcon(
-                            BitmapFactory.decodeResource(
-                                applicationContext.resources,
-                                R.mipmap.icons8_bug_48
-                            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                builder = Notification.Builder(applicationContext, channelId)
+                    .setContentTitle("Service is working")
+                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                    .setLargeIcon(
+                        BitmapFactory.decodeResource(
+                            applicationContext.resources,
+                            R.mipmap.icons8_bug_48
                         )
-                        .setContentIntent(pendingIntent)
-                } else {
-                    builder = Notification.Builder(applicationContext)
-                        .setContentTitle("Service is working")
-                        .setSmallIcon(R.mipmap.icons8_bug_48)
-                        .setLargeIcon(
-                            BitmapFactory.decodeResource(
-                                applicationContext.resources,
-                                R.mipmap.icons8_bug_48
-                            )
+                    )
+                    .setContentIntent(pendingIntent)
+            } else {
+                builder = Notification.Builder(applicationContext)
+                    .setContentTitle("Service is working")
+                    .setSmallIcon(R.mipmap.icons8_bug_48)
+                    .setLargeIcon(
+                        BitmapFactory.decodeResource(
+                            applicationContext.resources,
+                            R.mipmap.icons8_bug_48
                         )
-                        .setContentIntent(pendingIntent)
-                }
-                startForeground(1, builder.build())
+                    )
+                    .setContentIntent(pendingIntent)
             }
-
+            startForeground(1, builder.build())
         }
-        if (intent != null && intent.extras["isInit"] != null) {
-            isInit = intent.extras["isInit"] as Boolean
-        }
+        isInit = intent?.extras?.getBoolean("isInit")
         return START_NOT_STICKY
     }
 

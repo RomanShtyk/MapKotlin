@@ -1,6 +1,5 @@
 package com.example.kotlintestapp.view
 
-import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.*
 import android.content.pm.PackageManager
@@ -53,16 +52,15 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             val actionStartButton: MenuItem = menu.findItem(R.id.action_start)
             isChecking = isServiceRunningInForeground(this, MyService::class.java)
             if (isChecking) {
-                actionStartButton.icon = resources.getDrawable(R.drawable.baseline_pause_circle_outline_24)
+                actionStartButton.icon = applicationContext.getDrawable(R.drawable.baseline_pause_circle_outline_24)
             } else {
-                actionStartButton.icon = resources.getDrawable(R.drawable.baseline_play_circle_outline_24)
+                actionStartButton.icon = applicationContext.getDrawable(R.drawable.baseline_play_circle_outline_24)
             }
         }
         return true
     }
 
 
-    @SuppressLint("RestrictedApi")
     override fun onOptionsItemSelected(item: MenuItem?): Boolean {
         when (item?.itemId) {
             R.id.action_switch -> {
@@ -94,7 +92,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
             R.id.action_start -> {
                 if (isChecking) {
-                    val icon: Drawable = resources.getDrawable(R.drawable.baseline_play_circle_outline_24)
+                    val icon: Drawable? = applicationContext.getDrawable(R.drawable.baseline_play_circle_outline_24)
                     item.icon = icon
                     isChecking = false
 
@@ -105,7 +103,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     toast("Not working...")
 
                 } else {
-                    val icon: Drawable = resources.getDrawable(R.drawable.baseline_pause_circle_outline_24)
+                    val icon: Drawable? = applicationContext.getDrawable(R.drawable.baseline_pause_circle_outline_24)
                     item.icon = icon
                     isChecking = true
 
