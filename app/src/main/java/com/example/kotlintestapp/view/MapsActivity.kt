@@ -30,6 +30,7 @@ import com.google.maps.android.clustering.ClusterManager
 import org.jetbrains.anko.toast
 
 
+@Suppress("DEPRECATION")
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
@@ -191,21 +192,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private val mReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(contxt: Context?, intent: Intent?) {
-            if (intent!!.action == "location") {
-                lastLocation = intent.extras!!["location"] as Location
+            if (intent?.action == "location") {
+                lastLocation = intent.extras?.get("location") as Location
                 placeMarkerOnMap(LatLng(lastLocation!!.latitude, lastLocation!!.longitude))
             }
-            if (intent.action == "listOfPoints") {
+            if (intent?.action == "listOfPoints") {
                 mCheckPointsMap.clear()
-                mCheckPointsMap.putAll(intent.extras!!["listOfPoints"] as HashMap<Int, BugMarker>)
+                mCheckPointsMap.putAll(intent.extras?.get("listOfPoints") as HashMap<Int, BugMarker>)
                 mClusterManager.clearItems()
                 for (bug in mCheckPointsMap) {
                     mClusterManager.addItem(bug.value)
                     mClusterManager.cluster()
                 }
             }
-            if (intent.action == "list") {
-                mReachedPointsMap = intent.extras!!["list"] as HashMap<Int, BugMarker>
+            if (intent?.action == "list") {
+                mReachedPointsMap = intent.extras?.get("list") as HashMap<Int, BugMarker>
             }
         }
     }
